@@ -145,6 +145,12 @@ class PostgresSessionStore(SessionStore):
             )
             try:
                 payload, write_date = cursor.fetchone()
+
+                if isinstance(write_date, str):
+                    _logger.debug("write_date is str")
+                    write_date = datetime.strptime(
+                        write_date, '%Y-%m-%d %H:%M:%S.%f')
+
                 if write_date.date() != datetime.today().date():
                     cursor.execute(
                         """
@@ -157,7 +163,8 @@ class PostgresSessionStore(SessionStore):
                         [sid],
                     )
                 return self.session_class(pickle.loads(payload), sid, False)
-            except Exception:
+            except Exception as e:
+                _logger.exception("Error fetching payload", exc_info=e)
                 return self.session_class({}, sid, False)
 
     @retry_database
